@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Lordle — A daily Middle-earth word quest. Guess the word from the world of Tolkien.">
+    <meta name="theme-color" content="#0a0a0b">
+    <title>Lordle — Middle-earth Word Quest</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --green:      #4a7c59;
+            --green-glow: #5a9c6e;
+            --yellow:     #b8960c;
+            --yellow-glow:#d4a820;
+            --gray:       #2e2e32;
+            --gray-light: #4a4a50;
+            --bg:         #0a0a0b;
+            --bg2:        #111114;
+            --surface:    #18181c;
+            --border:     #2a2a30;
+            --gold:       #c9a84c;
+            --gold-light: #e8c97a;
+            --text:       #d4c9b0;
+            --text-dim:   #7a7060;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html {
+            height: 100%;
+            background: var(--bg);
+        }
+
+        body {
+            font-family: 'Crimson Text', Georgia, serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Atmospheric background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 60% 40% at 50% 0%, rgba(201,168,76,0.06) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 60% at 80% 80%, rgba(74,124,89,0.04) 0%, transparent 60%),
+                radial-gradient(ellipse 30% 40% at 20% 60%, rgba(139,90,43,0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Subtle texture overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+            background-size: 180px;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.4;
+        }
+
+        /* ── Header ── */
+        header {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 480px;
+            padding: 20px 20px 0;
+            text-align: center;
+            animation: fadeDown 0.6s ease both;
+        }
+
+        .header-rule {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        .header-rule::before,
+        .header-rule::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            opacity: 0.4;
+        }
+
+        .rune-ornament {
+            color: var(--gold);
+            font-size: 0.9rem;
+            opacity: 0.6;
+            letter-spacing: 4px;
+        }
+
+        h1 {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(1.8rem, 6vw, 2.4rem);
+            font-weight: 700;
+            color: var(--gold-light);
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            line-height: 1;
+            margin-bottom: 4px;
+            text-shadow: 0 0 40px rgba(201,168,76,0.3), 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .subtitle {
+            font-family: 'Crimson Text', serif;
+            font-style: italic;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+
+        .bottom-rule {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), var(--gold), var(--border), transparent);
+            margin-bottom: 0;
+        }
+
+        /* ── Stats bar ── */
+        #stats-bar {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            gap: 28px;
+            margin: 12px 0 4px;
+            animation: fadeDown 0.6s 0.1s ease both;
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1px;
+        }
+
+        .stat-val {
+            font-family: 'Cinzel', serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--gold-light);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.6rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+        }
+
+        .stat-divider {
+            width: 1px;
+            height: 28px;
+            background: var(--border);
+            align-self: center;
+        }
+
+        /* ── Message ── */
+        #message {
+            position: relative;
+            z-index: 10;
+            min-height: 32px;
+            font-family: 'Cinzel', serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: var(--gold-light);
+            text-align: center;
+            padding: 4px 20px;
+            text-shadow: 0 0 20px rgba(201,168,76,0.4);
+            animation: fadeDown 0.6s 0.15s ease both;
+        }
+
+        /* ── Share button ── */
+        #share-btn {
+            display: none;
+            position: relative;
+            z-index: 10;
+            background: transparent;
+            color: var(--gold);
+            border: 1px solid var(--gold);
+            padding: 8px 22px;
+            font-family: 'Cinzel', serif;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            cursor: pointer;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            animation: fadeIn 0.5s ease both;
+        }
+        #share-btn:hover {
+            background: rgba(201,168,76,0.1);
+            box-shadow: 0 0 16px rgba(201,168,76,0.2);
+        }
+
+        /* ── Grid ── */
+        #grid {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin: 6px auto;
+            animation: fadeUp 0.6s 0.2s ease both;
+        }
+
+        .row {
+            display: flex;
+            gap: 5px;
+        }
+
+        .tile {
+            width: 52px;
+            height: 52px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Cinzel', serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+            text-transform: uppercase;
+            transition: border-color 0.15s, transform 0.1s;
+            position: relative;
+        }
+
+        .tile.filled {
+            border-color: var(--gray-light);
+            transform: scale(1.04);
+        }
+
+        .tile.correct {
+            background: var(--green);
+            border-color: var(--green-glow);
+            color: #fff;
+            box-shadow: 0 0 12px rgba(74,124,89,0.4);
+            animation: flipIn 0.4s ease both;
+        }
+        .tile.present {
+            background: var(--yellow);
+            border-color: var(--yellow-glow);
+            color: #fff;
+            box-shadow: 0 0 12px rgba(184,150,12,0.4);
+            animation: flipIn 0.4s ease both;
+        }
+        .tile.absent {
+            background: var(--gray);
+            border-color: var(--gray);
+            color: var(--text-dim);
+            animation: flipIn 0.4s ease both;
+        }
+
+        /* Stagger tile reveal */
+        .tile:nth-child(1) { animation-delay: 0.00s; }
+        .tile:nth-child(2) { animation-delay: 0.08s; }
+        .tile:nth-child(3) { animation-delay: 0.16s; }
+        .tile:nth-child(4) { animation-delay: 0.24s; }
+        .tile:nth-child(5) { animation-delay: 0.32s; }
+        .tile:nth-child(6) { animation-delay: 0.40s; }
+
+        @keyframes flipIn {
+            0%   { transform: rotateX(0deg); }
+            50%  { transform: rotateX(-90deg); opacity: 0.5; }
+            100% { transform: rotateX(0deg); }
+        }
+
+        /* Shake on invalid */
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            20%     { transform: translateX(-6px); }
+            40%     { transform: translateX(6px); }
+            60%     { transform: translateX(-4px); }
+            80%     { transform: translateX(4px); }
+        }
+        .row.shake { animation: shake 0.4s ease; }
+
+        /* Mobile tile size */
+        @media (max-width: 380px) {
+            .tile { width: 44px; height: 44px; font-size: 1.3rem; }
+        }
+
+        /* ── Keyboard ── */
+        #keyboard {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 480px;
+            padding: 8px 8px 28px;
+            margin-top: 6px;
+            animation: fadeUp 0.6s 0.3s ease both;
+        }
+
+        .kb-row {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-bottom: 5px;
+            touch-action: manipulation;
+        }
+
+        .key {
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            height: 46px;
+            flex: 1;
+            max-width: 38px;
+            font-family: 'Cinzel', serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.15s, border-color 0.15s, transform 0.08s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+
+        .key:active { transform: scale(0.93); }
+
+        .key.wide {
+            max-width: 56px;
+            font-size: 0.6rem;
+            letter-spacing: 0.5px;
+        }
+
+        .key.correct {
+            background: var(--green);
+            border-color: var(--green-glow);
+            color: #fff;
+        }
+        .key.present {
+            background: var(--yellow);
+            border-color: var(--yellow-glow);
+            color: #fff;
+        }
+        .key.absent {
+            background: var(--gray);
+            border-color: var(--gray);
+            color: var(--text-dim);
+        }
+
+        /* ── Footer ── */
+        footer {
+            position: relative;
+            z-index: 10;
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            text-align: center;
+            padding-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* ── Animations ── */
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+        @keyframes winPulse {
+            0%,100% { text-shadow: 0 0 20px rgba(201,168,76,0.4); }
+            50%     { text-shadow: 0 0 40px rgba(201,168,76,0.9), 0 0 80px rgba(201,168,76,0.3); }
+        }
+        .win-glow { animation: winPulse 1.8s ease infinite; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-rule">
+            <span class="rune-ornament">✦ ᚱ ᚢ ᚾ ✦</span>
+        </div>
+        <h1>Lordle</h1>
+        <p class="subtitle">A Daily Middle-earth Word Quest</p>
+        <div class="bottom-rule"></div>
+    </header>
+
+    <div id="stats-bar">
+        <div class="stat">
+            <span class="stat-val" id="streak-val">0</span>
+            <span class="stat-label">Streak</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+            <span class="stat-val" id="wins-val">0</span>
+            <span class="stat-label">Wins</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+            <span class="stat-val" id="played-val">0</span>
+            <span class="stat-label">Played</span>
+        </div>
+    </div>
+
+    <div id="message"></div>
+    <button id="share-btn" onclick="shareResults()">⚔ Share Quest Results</button>
+
+    <div id="grid"></div>
+
+    <div id="keyboard">
+        <div class="kb-row" id="row1"></div>
+        <div class="kb-row" id="row2"></div>
+        <div class="kb-row" id="row3"></div>
+    </div>
+
+    <footer>A NEW WORD EACH DAY AT MIDNIGHT &nbsp;·&nbsp; lordle</footer>
+
+    <script>
+        const WORDS = [
+"FRODO","SAM","BILBO","GIMLI","MERRY","PIPPIN","ARWEN","ELROND","EOMER","EOWYN",
+"BALIN","GLOIN","THORIN","SAURON","SMAUG","GOLLUM","SMEAGOL","BEREN","TUOR","TURIN",
+"HUOR","GWAHIR","BARD","BEORN","ELROS","CIRDAN","THRAIN","FUNDIN","DWALIN","FILI",
+"KILI","DORI","NORI","ORI","OIN","BIFUR","BOFUR","BOMBUR","DAIN","NAIN",
+"GRIMA","GORBAG","UGLUK","MAHUR","SNAGA","HALDIR",
+"MAIAR","VALAR","VANYA","AVARI","ELDAR",
+"MORIA","ROHAN","GONDOR","SHIRE","MORDOR","BREE","ANOR","ISEN","ARNOR","LORIEN",
+"CARAS","EREBOR","DALE","COMBE","ARCHET","FORNOS","ANDUIN","SIRION","UMBAR","HARAD",
+"KHAND","RHUN","UDUN","CIRITH","UNGOL","MINAS","TIRITH","EMYN","MUIL",
+"ORC","TROLL","ENT","WARG","HOBBIT","DWARF","ELF","ISTAR",
+"RING","STING","NARSIL","AIGLOS","GROND",
+"MALORN","ATHELA","ELANOR","NIMLOT",
+"LEMBAS","CRAM","MEAD","WINE","ALE","BREAD","CAKE","HONEY",
+"RIVER","GLEN","VALE","HILL","WOOD","GROVE","FIELD","PLAIN","MARSH","CAVE",
+"MINE","HALL","GATE","WALL","TOWER","KEEP","ROAD","PATH","TRAIL","SEA",
+"SHORE","CLIFF","CRAG",
+"LIGHT","STAR","MOON","SUN","TREE","WHITE","BLACK","GREEN","BROWN","GOLD",
+"SILVER","SHADOW","FLAME","EMBER","SMOKE","ASH","STONE","IRON","STEEL",
+"HONOR","GLORY","VALOR","PEACE","WAR","BATTLE","SIEGE","STORM","CLOUD","RAIN",
+"SNOW","FROST","ICE","FIRE",
+"RUNE","BOOK","SCROLL","MAP","TOKEN","OATH","TRUTH","HOPE","FEAR","FAITH",
+"KING","QUEEN","LORD","LADY","PRINCE","DUKE","EARL","KNIGHT","THRONE","CROWN",
+"REALM","COURT","EAST","WEST","NORTH","SOUTH",
+"HAND","FOOT","EYE","EAR","NOSE","MOUTH","HAIR","BEARD","CLAW","FANG",
+"WING","TAIL","HORN",
+"LEAF","STEM","SEED","FLOWER","GRASS","MOSS","FERN","REED","THORN","BUSH",
+"LOG","BARK","TWIG","OAK","PINE","BIRCH","BEECH","ELM","YEW","FIR",
+"BONE","BLOOD","FLESH","HEART","SOUL","MIND","SPIRIT",
+"DARK","BRIGHT","SHINE","GLOW","DEEP","HIGH","WIDE","SMALL","LARGE","GREAT",
+"YOUNG","OLD","NEW","FIRST","LAST",
+"SWORD","SPEAR","SHIELD","HELM","ARMOR","MAIL","BLADE","ARROW","BOW","AXE",
+"WATCH","GUARD","SCOUT","RIDER","HOST","ARMY","FORCE","BAND","CLAN",
+"VAULT","CRYPT","TOMB","BARROW","WIGHT",
+"EAGLE","HAWK","RAVEN","CROW","WOLF","BEAR","HORSE","PONY",
+"BRIDGE","FORD","GLADE","MOOR","HEATH",
+"POWER","MAGIC","SPELL","CHARM","CURSE","FATE","DOOM","LUCK",
+"ELVEN","MORTAL","SPRING","POOL","STREAM",
+"WIND","GALE","CLOUD","COLD","HEAT","WARM",
+"SHADE","GLOOM","DAWN","DUSK","NIGHT",
+"VOICE","SONG","TALE","LORE","MYTH",
+"ROCK","METAL","FAIR","WILD","FREE","TRUE","BRAVE","BOLD","WAY"
+];
+
+        // Local-timezone date for midnight rollover
+        function getLocalDateString() {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        const todayDate   = getLocalDateString();
+        const todayIndex  = todayDate.replace(/-/g, '');
+        const TARGET_WORD = WORDS[parseInt(todayIndex) % WORDS.length].toUpperCase();
+        const WORD_LENGTH = TARGET_WORD.length;
+
+        let currentRow = 0, guess = "", gameOver = false;
+
+        // ── Stats ────────────────────────────────────────────────────────────
+        let stats = JSON.parse(localStorage.getItem('lordle_stats')) || {
+            streak: 0, wins: 0, played: 0, lastPlayed: null
+        };
+
+        function updateStatsDisplay() {
+            document.getElementById('streak-val').textContent = stats.streak;
+            document.getElementById('wins-val').textContent   = stats.wins;
+            document.getElementById('played-val').textContent = stats.played;
+        }
+
+        function saveStats(won) {
+            if (stats.lastPlayed === todayDate) return;
+            stats.played += 1;
+            if (won) {
+                stats.wins += 1;
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yy = yesterday.getFullYear();
+                const ym = String(yesterday.getMonth() + 1).padStart(2, '0');
+                const yd = String(yesterday.getDate()).padStart(2, '0');
+                const yesterdayStr = `${yy}-${ym}-${yd}`;
+                stats.streak = (stats.lastPlayed === yesterdayStr) ? stats.streak + 1 : 1;
+            } else {
+                stats.streak = 0;
+            }
+            stats.lastPlayed = todayDate;
+            localStorage.setItem('lordle_stats', JSON.stringify(stats));
+            updateStatsDisplay();
+        }
+
+        // ── Build grid ───────────────────────────────────────────────────────
+        const grid = document.getElementById("grid");
+        for (let i = 0; i < 6; i++) {
+            const row = document.createElement("div");
+            row.className = "row";
+            for (let j = 0; j < WORD_LENGTH; j++) {
+                const tile = document.createElement("div");
+                tile.className = "tile";
+                row.appendChild(tile);
+            }
+            grid.appendChild(row);
+        }
+
+        // ── Build keyboard ───────────────────────────────────────────────────
+        const keyRows = [
+            ["Q","W","E","R","T","Y","U","I","O","P"],
+            ["A","S","D","F","G","H","J","K","L"],
+            ["ENTER","Z","X","C","V","B","N","M","DEL"]
+        ];
+        const keyElements = {};
+        keyRows.forEach((row, i) => {
+            const rowEl = document.getElementById(`row${i+1}`);
+            row.forEach(key => {
+                const btn = document.createElement("button");
+                btn.textContent = key;
+                btn.className = "key" + (key.length > 1 ? " wide" : "");
+                btn.setAttribute('aria-label', key);
+                btn.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    handleInput(key === "DEL" ? "Backspace" : key === "ENTER" ? "Enter" : key);
+                });
+                rowEl.appendChild(btn);
+                if (key.length === 1) keyElements[key] = btn;
+            });
+        });
+
+        // Physical keyboard (desktop)
+        window.addEventListener('keydown', (e) => {
+            if (/^[a-zA-Z]$/.test(e.key)) handleInput(e.key.toUpperCase());
+            else if (e.key === 'Enter')     handleInput('Enter');
+            else if (e.key === 'Backspace') handleInput('Backspace');
+        });
+
+        // ── Game logic ───────────────────────────────────────────────────────
+        function handleInput(key) {
+            if (gameOver) return;
+            if (key === "Enter") {
+                if (guess.length === WORD_LENGTH) submitGuess();
+                else shakeRow();
+            } else if (key === "Backspace") {
+                guess = guess.slice(0, -1);
+                updateGrid();
+            } else if (guess.length < WORD_LENGTH && /^[A-Z]$/.test(key)) {
+                guess += key;
+                updateGrid();
+            }
+        }
+
+        function updateGrid() {
+            const row = grid.children[currentRow];
+            for (let i = 0; i < WORD_LENGTH; i++) {
+                const tile = row.children[i];
+                tile.textContent = guess[i] || "";
+                tile.classList.toggle('filled', !!guess[i]);
+            }
+        }
+
+        function shakeRow() {
+            const row = grid.children[currentRow];
+            row.classList.remove('shake');
+            void row.offsetWidth; // reflow
+            row.classList.add('shake');
+        }
+
+        function submitGuess() {
+            const row = grid.children[currentRow];
+            let checkWord = TARGET_WORD;
+            const status = Array(WORD_LENGTH).fill("absent");
+
+            for (let i = 0; i < WORD_LENGTH; i++) {
+                if (guess[i] === TARGET_WORD[i]) {
+                    status[i] = "correct";
+                    checkWord = checkWord.replace(guess[i], "_");
+                }
+            }
+            for (let i = 0; i < WORD_LENGTH; i++) {
+                if (status[i] !== "correct" && checkWord.includes(guess[i])) {
+                    status[i] = "present";
+                    checkWord = checkWord.replace(guess[i], "_");
+                }
+            }
+
+            // Reveal tiles with stagger
+            for (let i = 0; i < WORD_LENGTH; i++) {
+                const tile = row.children[i];
+                setTimeout(() => {
+                    tile.classList.remove('filled');
+                    tile.className = "tile " + status[i];
+                }, i * 80);
+            }
+
+            updateKeyboard(guess, status);
+
+            const delay = WORD_LENGTH * 80 + 200;
+            setTimeout(() => {
+                if (guess === TARGET_WORD) {
+                    setMessage("YOU HAVE MY SWORD! ⚔", true);
+                    endGame(true);
+                } else if (currentRow === 5) {
+                    setMessage("THE QUEST FAILED · " + TARGET_WORD, false);
+                    endGame(false);
+                } else {
+                    currentRow++;
+                    guess = "";
+                }
+            }, delay);
+        }
+
+        // ── Keyboard coloring ────────────────────────────────────────────────
+        const keyStatus = {};
+        const priority  = { correct: 3, present: 2, absent: 1 };
+
+        function updateKeyboard(word, status) {
+            for (let i = 0; i < word.length; i++) {
+                const letter = word[i];
+                const s = status[i];
+                if (!keyStatus[letter] || priority[s] > priority[keyStatus[letter]]) {
+                    keyStatus[letter] = s;
+                }
+            }
+            for (const [letter, s] of Object.entries(keyStatus)) {
+                if (keyElements[letter]) {
+                    keyElements[letter].classList.remove('correct', 'present', 'absent');
+                    keyElements[letter].classList.add(s);
+                }
+            }
+        }
+
+        function setMessage(text, win) {
+            const el = document.getElementById("message");
+            el.textContent = text;
+            if (win) el.classList.add('win-glow');
+        }
+
+        function endGame(won) {
+            gameOver = true;
+            saveStats(won);
+            setTimeout(() => {
+                document.getElementById("share-btn").style.display = "inline-block";
+            }, 600);
+        }
+
+        function shareResults() {
+            let emojiGrid = "";
+            for (let i = 0; i <= currentRow; i++) {
+                const tiles = grid.children[i].children;
+                for (let j = 0; j < WORD_LENGTH; j++) {
+                    if      (tiles[j].classList.contains("correct")) emojiGrid += "🟩";
+                    else if (tiles[j].classList.contains("present")) emojiGrid += "🟨";
+                    else                                              emojiGrid += "⬛";
+                }
+                emojiGrid += "\n";
+            }
+            const score = (guess === TARGET_WORD) ? (currentRow + 1) : "X";
+            const text  = `⚔ Lordle — Middle-earth Word Quest\n${todayDate}  ${score}/6\n\n${emojiGrid}`;
+            navigator.clipboard.writeText(text).then(() => {
+                const old = document.getElementById("message").textContent;
+                document.getElementById("message").classList.remove('win-glow');
+                document.getElementById("message").textContent = "RESULTS COPIED TO CLIPBOARD";
+                setTimeout(() => {
+                    document.getElementById("message").textContent = old;
+                    if (guess === TARGET_WORD) document.getElementById("message").classList.add('win-glow');
+                }, 2000);
+            });
+        }
+
+        // ── Init ─────────────────────────────────────────────────────────────
+        updateStatsDisplay();
+
+        // If already played today, restore completed state
+        if (stats.lastPlayed === todayDate) {
+            setMessage("COME BACK TOMORROW FOR A NEW QUEST", false);
+        }
+    </script>
+</body>
+</html>

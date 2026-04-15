@@ -77,7 +77,7 @@
             z-index: 10;
             width: 100%;
             max-width: 480px;
-            padding: 20px 20px 0;
+            padding: clamp(8px, 2vw, 20px) 20px 0;
             text-align: center;
             animation: fadeDown 0.6s ease both;
         }
@@ -112,7 +112,7 @@
             letter-spacing: 6px;
             text-transform: uppercase;
             line-height: 1;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
             text-shadow: 0 0 40px rgba(201,168,76,0.3), 0 2px 4px rgba(0,0,0,0.8);
         }
 
@@ -122,7 +122,7 @@
             font-size: 0.85rem;
             color: var(--text-dim);
             letter-spacing: 2px;
-            margin-bottom: 12px;
+            margin-bottom: 6px;
         }
 
         .bottom-rule {
@@ -137,7 +137,7 @@
             z-index: 10;
             display: flex;
             gap: 28px;
-            margin: 12px 0 4px;
+            margin: clamp(4px, 1vw, 12px) 0 2px;
             animation: fadeDown 0.6s 0.1s ease both;
         }
 
@@ -174,14 +174,14 @@
         #message {
             position: relative;
             z-index: 10;
-            min-height: 32px;
+            min-height: 24px;
             font-family: 'Cinzel', serif;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 600;
             letter-spacing: 2px;
             color: var(--gold-light);
             text-align: center;
-            padding: 4px 20px;
+            padding: 2px 20px;
             text-shadow: 0 0 20px rgba(201,168,76,0.4);
             animation: fadeDown 0.6s 0.15s ease both;
         }
@@ -200,7 +200,7 @@
             font-weight: 600;
             letter-spacing: 2px;
             cursor: pointer;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
             text-transform: uppercase;
             transition: all 0.2s;
             animation: fadeIn 0.5s ease both;
@@ -217,7 +217,7 @@
             display: flex;
             flex-direction: column;
             gap: 5px;
-            margin: 6px auto;
+            margin: 4px auto;
             animation: fadeUp 0.6s 0.2s ease both;
         }
 
@@ -227,15 +227,15 @@
         }
 
         .tile {
-            width: 52px;
-            height: 52px;
+            width: clamp(36px, 11vw, 52px);
+            height: clamp(36px, 11vw, 52px);
             border: 1px solid var(--border);
             background: var(--surface);
             display: flex;
             align-items: center;
             justify-content: center;
             font-family: 'Cinzel', serif;
-            font-size: 1.5rem;
+            font-size: clamp(1rem, 3.5vw, 1.5rem);
             font-weight: 700;
             color: var(--text);
             text-transform: uppercase;
@@ -293,10 +293,7 @@
         }
         .row.shake { animation: shake 0.4s ease; }
 
-        /* Mobile tile size */
-        @media (max-width: 380px) {
-            .tile { width: 44px; height: 44px; font-size: 1.3rem; }
-        }
+        /* Mobile tile size handled by clamp() above */
 
         /* ── Keyboard ── */
         #keyboard {
@@ -304,8 +301,8 @@
             z-index: 10;
             width: 100%;
             max-width: 480px;
-            padding: 8px 8px 28px;
-            margin-top: 6px;
+            padding: 6px 8px 16px;
+            margin-top: 4px;
             animation: fadeUp 0.6s 0.3s ease both;
         }
 
@@ -322,9 +319,9 @@
             color: var(--text);
             border: 1px solid var(--border);
             border-radius: 3px;
-            height: 46px;
+            height: clamp(36px, 9vw, 46px);
             flex: 1;
-            max-width: 38px;
+            max-width: clamp(28px, 8vw, 38px);
             font-family: 'Cinzel', serif;
             font-size: 0.8rem;
             font-weight: 600;
@@ -341,8 +338,8 @@
         .key:active { transform: scale(0.93); }
 
         .key.wide {
-            max-width: 56px;
-            font-size: 0.6rem;
+            max-width: clamp(42px, 12vw, 56px);
+            font-size: clamp(0.5rem, 1.5vw, 0.6rem);
             letter-spacing: 0.5px;
         }
 
@@ -692,15 +689,39 @@
             }
             const score = (guess === TARGET_WORD) ? (currentRow + 1) : "X";
             const text  = `⚔ Lordle — Middle-earth Word Quest\n${todayDate}  ${score}/6\n\n${emojiGrid}`;
-            navigator.clipboard.writeText(text).then(() => {
-                const old = document.getElementById("message").textContent;
-                document.getElementById("message").classList.remove('win-glow');
-                document.getElementById("message").textContent = "RESULTS COPIED TO CLIPBOARD";
+
+            function onCopied() {
+                const msgEl = document.getElementById("message");
+                const old = msgEl.textContent;
+                msgEl.classList.remove('win-glow');
+                msgEl.textContent = "RESULTS COPIED TO CLIPBOARD";
                 setTimeout(() => {
-                    document.getElementById("message").textContent = old;
-                    if (guess === TARGET_WORD) document.getElementById("message").classList.add('win-glow');
+                    msgEl.textContent = old;
+                    if (guess === TARGET_WORD) msgEl.classList.add('win-glow');
                 }, 2000);
-            });
+            }
+
+            function onFailed() {
+                // Last resort: prompt user to copy manually
+                const msgEl = document.getElementById("message");
+                msgEl.textContent = "LONG-PRESS & COPY BELOW";
+                // Create a temporary visible textarea for manual copy
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);width:90%;max-width:340px;background:#1a1a1e;color:#d4c9b0;border:1px solid #c9a84c;padding:10px;font-size:0.8rem;z-index:999;border-radius:4px;';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                try { document.execCommand('copy'); onCopied(); document.body.removeChild(ta); }
+                catch(e) { setTimeout(() => { document.body.removeChild(ta); }, 5000); }
+            }
+
+            // Try modern clipboard API first, fall back for Chrome mobile
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(onCopied).catch(() => onFailed());
+            } else {
+                onFailed();
+            }
         }
 
         // ── Init ─────────────────────────────────────────────────────────────
